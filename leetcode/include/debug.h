@@ -1,3 +1,5 @@
+#include <cassert>
+
 #define MY_ASSERT(exp) \
 { \
     if (!(exp)) \
