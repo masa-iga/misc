@@ -32,19 +32,17 @@ public:
 Node* createNode(vector<vector<int32_t>> adjList);
 void printAdjacency(Node* head);
 
-// TODO: read DFS algorithm。早いのか？
 class Solution {
 public:
     Node* cloneGraph(Node* node) {
         if (node == nullptr)
             return nullptr;
 
-        unordered_map<int32_t, Node*> nodePointers;
+        unordered_map<Node*, Node*> nodePointers;
 
-        Node* head = new Node(node->val);
-        nodePointers[node->val] = head;
+        nodePointers[node] = new Node(node->val);
 
-        queue<pair<Node *, Node *>> q({make_pair(node, head)});
+        queue<pair<Node *, Node *>> q({make_pair(node, nodePointers.at(node))});
 
         while (!q.empty())
         {
@@ -53,21 +51,19 @@ public:
 
             for (const auto& nsrc : src->neighbors)
             {
-                if (nodePointers.find(nsrc->val) != nodePointers.end())
+                if (nodePointers.find(nsrc) != nodePointers.end())
                 {
-                    Node* ndst = nodePointers.at(nsrc->val);
-                    dst->neighbors.push_back(ndst);
+                    dst->neighbors.push_back(nodePointers.at(nsrc));
                     continue;
                 }
 
-                Node* ndst = new Node(nsrc->val);
-                nodePointers[nsrc->val] = ndst;
-                dst->neighbors.push_back(ndst);
-                q.push(make_pair(nsrc, ndst));
+                nodePointers[nsrc] = new Node(nsrc->val);
+                dst->neighbors.push_back(nodePointers.at(nsrc));
+                q.push(make_pair(nsrc, nodePointers.at(nsrc)));
             }
         }
 
-        return head;
+        return nodePointers.at(node);
     }
 };
 
