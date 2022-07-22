@@ -6,6 +6,7 @@
 #include <cassert>
 #include <algorithm>
 #include <array>
+#include <queue>
 
 using namespace std;
 
@@ -21,171 +22,92 @@ void check(vector<vector<int32_t>>& ans, vector<vector<int32_t>>& exp);
 #define DPRINTF(...)
 #endif // #if ENABLE_DPRINTF
 
-enum class Flag : uint64_t
-{
-    kNone = 0,
-    kPacific = 1 << 0,
-    kAtlantic = 1 << 1,
-};
-
-struct State {
-    bool m_bChecked = false;
-    Flag m_flag = Flag::kNone;
-};
-
-Flag operator|(Flag lhs, Flag rhs)
-{
-    return static_cast<Flag>(static_cast<uint64_t>(lhs) | static_cast<uint64_t>(rhs));
-}
-
-Flag operator&(Flag lhs, Flag rhs)
-{
-    return static_cast<Flag>(static_cast<uint64_t>(lhs) & static_cast<uint64_t>(rhs));
-}
-
-Flag& operator|=(Flag& lhs, Flag rhs)
-{
-    lhs = lhs | rhs;
-    return lhs;
-}
-
-bool isMatch(Flag a, Flag b)
-{
-    return (a & b) == b;
-}
-
 class Solution {
 public:
-    bool canFlowToPacificOcean(int32_t x, int32_t y)
-    {
-        if (x == 0)
-            return true;
-
-        if (y == 0)
-            return true;
-
-        return false;
-    }
-
-    bool canFlowToAtlanticOcean(const vector<vector<int32_t>>& heights, int32_t x, int32_t y)
-    {
-        const uint32_t m = heights.size();
-        assert(m > 0);
-        const uint32_t n = heights.at(0).size();
-        assert(n > 0);
-
-        if (x == n - 1)
-            return true;
-
-        if (y == m - 1)
-            return true;
-
-        return false;
-    }
-
-    bool isOutOfBound(const vector<vector<int32_t>>& heights, int32_t x, int32_t y)
-    {
-        const uint32_t m = heights.size();
-        assert(m > 0);
-        const uint32_t n = heights.at(0).size();
-        assert(n > 0);
-
-        if (x < 0 || n <= x)
-            return true;
-
-        if (y < 0 || m <= y)
-            return true;
-
-        return false;
-    }
-
-    int32_t computeIndex(const vector<vector<int32_t>>& heights, int32_t x, int32_t y)
-    {
-        const uint32_t m = heights.size();
-        assert(m > 0);
-        const uint32_t n = heights.at(0).size();
-        assert(n > 0);
-
-        return (n * y) + x;
-    }
-
-    const array<pair<int32_t, int32_t>, 4> kDirects = {
-        make_pair(-1, 0),
-        make_pair(1, 0),
-        make_pair(0, -1),
-        make_pair(0, 1)};
-
-    Flag dfs(vector<bool> bVisitedArray, const vector<vector<int32_t>>& heights, int32_t col, int32_t row)
-    {
-        // Let's try without cache
-
-        if (bVisitedArray.at(computeIndex(heights, col, row)))
-            return Flag::kNone;
-
-        bVisitedArray.at(computeIndex(heights, col, row)) = true;
-
-        if (isOutOfBound(heights, col, row))
-            return Flag::kNone;
-        
-        Flag flag = Flag::kNone;
-
-        if (canFlowToPacificOcean(col, row))
-            flag |= Flag::kPacific;
-
-        if (canFlowToAtlanticOcean(heights, col, row))
-            flag |= Flag::kAtlantic;
-        
-        if (flag == (Flag::kPacific | Flag::kAtlantic))
-            return flag;
-        
-        for (const auto& dir : kDirects)
-        {
-            const int32_t nx = col + dir.first;
-            const int32_t ny = row + dir.second;
-
-            if (isOutOfBound(heights, nx, ny))
-                continue;
-
-            const int32_t h = heights.at(row).at(col);
-            const int32_t nh = heights.at(ny).at(nx);
-
-            if (h >= nh)
-            {
-                flag |= dfs(bVisitedArray, heights, nx, ny);
-            }
-        }
-
-        return flag;
-    }
-
     vector<vector<int>> pacificAtlantic(vector<vector<int>>& heights) {
-        const uint32_t m = heights.size();
-        assert(m > 0);
-        const uint32_t n = heights.at(0).size();
-        assert(n > 0);
+        const size_t numOfRow = heights.size();
+        assert(numOfRow > 0);
+        const size_t numOfCol = heights.at(0).size();
+        assert(numOfCol > 0);
 
-        vector<bool> bVisitedArray;
+        queue<pair<int32_t, int32_t>> q0, q1;
         {
-            bVisitedArray.resize(m * n);
-
-            for (auto b : bVisitedArray)
-                b = false;
+            for (int32_t r = 0; r < numOfRow; ++r)
+                for (int32_t c = 0; c < numOfCol; ++c)
+                {
+                    if (r == 0 || c == 0)
+                        q0.push(make_pair(r,c));
+                    
+                    if (r == numOfRow - 1 || c == numOfCol - 1)
+                        q1.push(make_pair(r, c));
+                }
         }
+
+        bool bVisitedArray0[numOfRow][numOfCol], bVisitedArray1[numOfRow][numOfCol];
+        {
+            for (auto &a : bVisitedArray0)
+                for (auto &b : a)
+                    b = false;
+
+            for (auto &a : bVisitedArray1)
+                for (auto &b : a)
+                    b = false;
+        }
+
+        auto traverse = [](queue<pair<int32_t, int32_t>> &q, bool *bVisitedArray, const vector<vector<int>> &heights, int32_t numOfRow, int32_t numOfCol)
+        {
+            while (!q.empty())
+            {
+                const auto [r, c] = q.front();
+                q.pop();
+
+                bool& bVisitedFlag = *(bVisitedArray + r * numOfCol + c);
+
+                if (bVisitedFlag)
+                    continue;
+
+                bVisitedFlag = true;
+
+                constexpr array<pair<int32_t, int32_t>, 4> kDirects = {
+                    make_pair(-1, 0),
+                    make_pair(1, 0),
+                    make_pair(0, -1),
+                    make_pair(0, 1),
+                };
+
+                for (const pair<int32_t, int32_t> d : kDirects)
+                {
+                    const int32_t nr = r + d.first;
+                    const int32_t nc = c + d.second;
+
+                    auto isOutOfBound = [](int32_t r, int32_t c, int32_t maxr, int32_t maxc)
+                    {
+                        if (r < 0 || maxr <= r || c < 0 || maxc <= c)
+                            return true;
+
+                        return false;
+                    };
+
+                    if (isOutOfBound(nr, nc, numOfRow, numOfCol))
+                        continue;
+
+                    if (heights.at(r).at(c) > heights.at(nr).at(nc))
+                        continue;
+
+                    q.push(make_pair(nr, nc));
+                }
+            }
+        };
+
+        traverse(q0, bVisitedArray0[0], heights, numOfRow, numOfCol);
+        traverse(q1, bVisitedArray1[0], heights, numOfRow, numOfCol);
 
         vector<vector<int32_t>> ans;
 
-        for (int32_t row = 0; row < m; ++row)
-            for (int32_t col = 0; col < n; ++col)
-            {
-                const Flag f = dfs(bVisitedArray, heights, col, row);
-
-                DPRINTF("(%d, %d) %d\n", col, row, (int32_t)f);
-
-                if (f == (Flag::kPacific | Flag::kAtlantic))
-                {
-                    ans.push_back({row, col});
-                }
-            }
+        for (int32_t r = 0; r < numOfRow; ++r)
+            for (int32_t c = 0; c < numOfCol; ++c)
+                if (bVisitedArray0[r][c] && bVisitedArray1[r][c])
+                    ans.emplace_back(vector<int32_t>{r, c});
 
         return ans;
     }
@@ -198,6 +120,7 @@ int32_t main(int32_t argc, char* argv[])
     vector<vector<int32_t>> ans;
     vector<vector<int32_t>> exp;
 
+#if 1
     {
         heights = {{1}};
         ans = solution.pacificAtlantic(heights);
@@ -214,7 +137,9 @@ int32_t main(int32_t argc, char* argv[])
         exp = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
         check(ans, exp);
     }
+#endif
 
+#if 1
     {
         heights = {
             {1, 2},
@@ -301,7 +226,6 @@ int32_t main(int32_t argc, char* argv[])
         check(ans, exp);
     }
 
-    // m, n が逆になっている
     {
         heights = {
             {2, 4, 4},
@@ -318,6 +242,7 @@ int32_t main(int32_t argc, char* argv[])
         {{1, 2, 2, 3, 5}, {3, 2, 3, 4, 4}, {2, 4, 5, 3, 1}, {6, 7, 1, 4, 5}, {5, 1, 1, 2, 4}};
         ans = solution.pacificAtlantic(heights);
     }
+#endif
 
     return 0;
 }
