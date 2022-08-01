@@ -23,51 +23,44 @@ using namespace std;
 class Solution {
 public:
     bool canFinish(int numCourses, vector<vector<int>>& prerequisites) {
-        unordered_multimap<int32_t, int32_t> hashMap;
-
-        for (const auto& e : prerequisites)
+        vector<vector<int32_t>> graph(numCourses);
         {
-            const int32_t src = e.at(1);
-            const int32_t dst = e.at(0);
-            hashMap.emplace(dst, src);
+            for (const vector<int32_t>& direction : prerequisites)
+            {
+                assert(direction.size() == 2);
+                const int32_t src = direction.at(1);
+                const int32_t dst = direction.at(0);
+                graph.at(src).push_back(dst);
+            }
         }
 
-        for (auto it = hashMap.cbegin(); it != hashMap.cend(); ++it)
+        vector<int32_t> indegrees(numCourses);
         {
-            const int32_t entryPoint = it->second;
-
-            queue<int32_t> q;
-            q.push(entryPoint);
-            DPRINTF("Entry point: %d\n", entryPoint);
-
-            vector<bool> visitedArray;
-            visitedArray.resize(numCourses);
-
-            while (!q.empty())
+            for (const vector<int32_t>& direction : prerequisites)
             {
-                const int32_t dst = q.front();
-                q.pop();
+                const int32_t dst = direction.at(0);
+                indegrees.at(dst)++;
+            }
+        }
 
-                if (visitedArray.at(dst))
-                {
-                    DPRINTF("already visited. (%d)\n", dst);
-                    continue;
-                }
+        for (uint32_t i = 0; i < numCourses; ++i)
+        {
+            uint32_t j = 0;
 
-                visitedArray.at(dst) = true;
+            for ( ; j < numCourses; ++j)
+            {
+                if (indegrees.at(j) == 0)
+                    break;
+            }
 
-                auto keys = hashMap.equal_range(dst);
+            if (j == numCourses)
+                return false;
+            
+            indegrees.at(j) += -1;
 
-                for (auto it = keys.first; it != keys.second; ++it)
-                {
-                    const int32_t src = it->second;
-
-                    if (src == entryPoint)
-                        return false;
-
-                    q.push(src);
-                    DPRINTF("%d -> %d\n", src, dst);
-                }
+            for (const int32_t dst : graph.at(j))
+            {
+                indegrees.at(dst) += -1;
             }
         }
 
@@ -235,7 +228,6 @@ int32_t main(int32_t argc, char* argv[])
         const bool ans = solution.canFinish(numCourses, prerequisites);
         assert(ans == true);
     }
-
 
     return 0;
 }
