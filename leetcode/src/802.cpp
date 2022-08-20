@@ -21,52 +21,46 @@ do { \
 
 class Solution {
 public:
+    enum class State
+    {
+        kUnvisited,
+        kSafe,
+        kUnsafe,
+    };
+
+    bool dfs(vector<State>& states, const vector<vector<int32_t>>& graph, int32_t index)
+    {
+        if (states.at(index) != State::kUnvisited)
+        {
+            return (states.at(index) == State::kSafe) ? true : false;
+        }
+
+        states.at(index) = State::kUnsafe;
+
+        for (const int32_t next_index : graph.at(index))
+        {
+            if (!dfs(states, graph, next_index))
+                return false;
+        }
+
+        states.at(index) = State::kSafe;
+
+        return true;
+    }
+
     vector<int> eventualSafeNodes(vector<vector<int>>& graph) {
+        vector<State> states(graph.size());
+        std::fill(states.begin(), states.end(), State::kUnvisited);
 
-        vector<set<int32_t>> inGraph(graph.size());
-        vector<set<int32_t>> outGraph(graph.size());
+        vector<int32_t> ans;
+
+        for (int32_t i = 0; i < graph.size(); ++i)
         {
-            for (int32_t in = 0; in < graph.size(); ++in)
-            {
-                for (const int32_t out : graph.at(in))
-                {
-                    inGraph.at(out).emplace(in);
-                    outGraph.at(in).emplace(out);
-                }
-            }
+            if (dfs(states, graph, i))
+                ans.emplace_back(i);
         }
 
-        vector<int32_t> safeNodes;
-        queue<int32_t> terminalNodes;
-        {
-            for (int32_t i = 0; i < graph.size(); ++i)
-                if (outGraph.at(i).size() == 0)
-                {
-                    terminalNodes.emplace(i);
-                    safeNodes.emplace_back(i);
-                }
-        }
-
-        while (!terminalNodes.empty())
-        {
-            const int32_t node = terminalNodes.front();
-            terminalNodes.pop();
-
-            for (const int32_t inNode : inGraph.at(node))
-            {
-                outGraph.at(inNode).erase(node);
-
-                if (outGraph.at(inNode).size() == 0)
-                {
-                    terminalNodes.emplace(inNode);
-                    safeNodes.emplace_back(inNode);
-                }
-            }
-        }
-
-        std::sort(safeNodes.begin(), safeNodes.end());
-
-        return safeNodes;
+        return ans;
     }
 };
 
@@ -78,9 +72,11 @@ int32_t main(int32_t argc, char* argv[])
     vector<int32_t> exp;
 
     {
-        graph = {{}, {}, {}};
-        exp = {0, 1, 2};
-        ans = solution.eventualSafeNodes(graph); assert(ans == exp);
+        {
+            graph = {{}, {}, {}};
+            exp = {0, 1, 2};
+            ans = solution.eventualSafeNodes(graph); assert(ans == exp);
+        }
 
         {
             graph = {{}, {0}, {}};
