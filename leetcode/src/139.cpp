@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <unordered_set>
 
 using namespace std;
 
@@ -29,98 +30,60 @@ do { \
 #define DPRINTF(...)
 #endif // #if ENABLE_PRINTF
 
-class Trie
-{
+class HashTable {
 public:
-    Trie()
+    void add(const string& s)
     {
-        for (Trie*& n : m_nodes)
-            n = nullptr;
+        m_table.emplace(s);
     }
-    Trie(char c) : Trie() { m_c = c; }
 
-    bool findWord(const string& word, int32_t pos) const
+    bool search(const string& s, vector<bool>* bCacheArray = nullptr) const
     {
-        ASSERT(pos <= word.size());
+        if (bCacheArray == nullptr)
+        {
+            bCacheArray = new vector<bool>(s.length(), false);
+        }
 
-        if (pos == word.size())
-            return m_terminate;
-        
-        const int32_t idx = getIndex(word.at(pos));
-
-        if (m_nodes.at(idx) == nullptr)
+        if (bCacheArray->at(s.length() - 1))
             return false;
 
-        return m_nodes.at(idx)->findWord(word, pos + 1);
-    }
-
-    void addWord(const string& word, int32_t pos)
-    {
-        ASSERT(pos <= word.size());
-
-        if (word.size() == pos)
-        {
-            m_terminate = true;
-            return;
-        }
-        
-        const int32_t idx = getIndex(word.at(pos));
-
-        if (m_nodes.at(idx) == nullptr)
-            m_nodes.at(idx) = new Trie(word.at(pos));
-        
-        m_nodes.at(idx)->addWord(word, pos + 1);
-    }
-
-private:
-    static constexpr size_t kNumOfElements = 'z' - 'a' + 1;
-
-    int32_t getIndex(char c) const
-    {
-        ASSERT('a' <= c && c <= 'z');
-        return c - 'a';
-    }
-
-    array<Trie*, kNumOfElements> m_nodes;
-    char m_c = '0';
-    bool m_terminate = false;
-};
-
-class Solution {
-public:
-    bool wordBreak(const string& s, vector<string>& wordDict) {
-        for (const string& w : wordDict)
-            m_trie.addWord(w, 0);
-
-        return wordSearch(s);
-    }
-
-private:
-    bool wordSearch(const string& s)
-    {
-        if (s.empty())
-            return true;
-
-        const int32_t maxLen = s.size();
-        ASSERT(maxLen > 0);
-
-        for (int32_t i = maxLen; i > 0; --i)
+        for (int32_t i = 1; i <= s.length(); ++i)
         {
             const string str = s.substr(0, i);
 
-            if (m_trie.findWord(str, 0))
-            {
-                const string newStr = s.substr(i, maxLen);
+            if (m_table.find(str) == m_table.end())
+                continue;
+            
+            if (i == s.length())
+                return true;
+            
+            const string next = s.substr(i, s.length() - i);
 
-                if (wordSearch(newStr))
-                    return true;
-            }
+            if (search(next, bCacheArray))
+                return true;
         }
+
+        // cache the result (false)
+        bCacheArray->at(s.length() - 1) = true;
 
         return false;
     }
 
-    Trie m_trie;
+private:
+    unordered_set<string> m_table;
+};
+
+class Solution {
+public:
+    bool wordBreak(string s, vector<string>& wordDict) {
+        for (const string& s : wordDict)
+            m_hashTable.add(s);
+
+        return m_hashTable.search(s);
+    }
+
+public:
+    HashTable m_hashTable;
 };
 
 void test(const string& s, vector<string>& wordDict, bool exp)
@@ -140,6 +103,7 @@ int32_t main(int32_t argc, char*  argv[])
         test(s, wordDict, true);
     }
 
+#if 1
     {
         s = "applepenapple";
         wordDict = {"apple","pen"};
@@ -190,12 +154,13 @@ int32_t main(int32_t argc, char*  argv[])
         wordDict = {"ab","bc","a"};
         test(s, wordDict, true);
     }
+#endif
 
-#if 0
+#if 1
     {
         s = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab";
         wordDict = {"a","aa","aaa","aaaa","aaaaa","aaaaaa","aaaaaaa","aaaaaaaa","aaaaaaaaa","aaaaaaaaaa"};
-        test(s, wordDict, true);
+        test(s, wordDict, false);
     }
 #endif
 
