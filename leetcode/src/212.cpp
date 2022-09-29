@@ -4,6 +4,7 @@
 #include <string>
 #include <cassert>
 #include <array>
+#include <unordered_set>
 
 using namespace std;
 
@@ -26,95 +27,136 @@ do { \
 #define ASSERT(...)
 #endif // #if ENABLE_ASSERT
 
-struct Coord
-{
-    Coord(int32_t x, int32_t y) : m_x(x), m_y(y) {}
-    int32_t m_x = 0;
-    int32_t m_y = 0;
-};
-
-vector<Coord> getCoords(const vector<vector<char>>& board, const char c)
-{
-    vector<Coord> coords;
-
-    for (int32_t y = 0; y < board.size(); ++y)
+class Node {
+public:
+    Node()
     {
-        for (int32_t x = 0; x < board.at(y).size(); ++x)
+        for (auto& node : m_nodes)
+            node = nullptr;
+    }
+    Node(char c) : Node() { m_c = c; }
+
+    void create(const string& word, int32_t pos)
+    {
+        ASSERT(pos <= word.size());
+
+        if (word.size() == pos)
         {
-            if (board.at(y).at(x) == c)
-            {
-                coords.emplace_back(Coord(x, y));
-            }
+            m_word = word;
+            return;
         }
+
+        const char c = word.at(pos);
+        const int32_t idx = getIndex(c);
+
+        if (m_nodes.at(idx) == nullptr)
+        {
+            m_nodes.at(idx) = new Node(c);
+        }
+
+        m_nodes.at(idx)->create(word, pos + 1);
     }
 
-    return coords;
+    Node* getNode(char c) { return m_nodes.at(getIndex(c)); }
+    string getWord() const { return m_word; }
+    bool isEnd() const { return m_word == "" ? false : true; }
+    void invalidate() { m_word = ""; };
+
+private:
+    static constexpr char kInvalid = '_';
+    static constexpr size_t kNumOfNode = 26;
+
+    int32_t getIndex(char c) const
+    {
+        ASSERT('a' <= c && c <= 'z');
+        return c - 'a';
+    }
+
+    char m_c = kInvalid;
+    string m_word = "";
+    array<Node*, kNumOfNode> m_nodes;
+};
+
+Node* buildTrie(const vector<string>& words)
+{
+    Node* top = new Node();
+
+    for (const string& word : words)
+    {
+        top->create(word, 0);
+    }
+
+    return top;
+}
+
+bool isOutOfBound(const vector<vector<char>>& board, int32_t x, int32_t y)
+{
+    if (y < 0 || board.size() <= y)
+        return true;
+
+    if (x < 0 || board.at(0).size() <= x)
+        return true;
+
+    return false;
+}
+
+void dfs(vector<string>& ans, Node* node, vector<vector<char>>& board, int32_t x, int32_t y)
+{
+    if (isOutOfBound(board, x, y))
+        return;
+    
+    constexpr char kAlreadyVisited = '_';
+
+    if (board.at(y).at(x) == kAlreadyVisited)
+        return;
+
+    const char c = board.at(y).at(x);
+
+    Node* n = node->getNode(c);
+
+    if (n == nullptr)
+        return;
+    
+    if (n->isEnd())
+    {
+        ans.emplace_back(n->getWord());
+        n->invalidate();
+    }
+
+    const vector<pair<int32_t, int32_t>> coords{
+        make_pair<int32_t, int32_t>(-1, 0),
+        make_pair<int32_t, int32_t>(+1, 0),
+        make_pair<int32_t, int32_t>(0, -1),
+        make_pair<int32_t, int32_t>(0, +1),
+    };
+
+    board.at(y).at(x) = kAlreadyVisited;
+
+    for (pair<int32_t, int32_t> coord : coords)
+    {
+        dfs(ans, n, board, x + coord.first, y + coord.second);
+    }
+
+    board.at(y).at(x) = c;
 }
 
 class Solution {
 public:
     vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {
+        Node* head = buildTrie(words);
+        ASSERT(head != nullptr);
 
         vector<string> ans;
 
-        for (const string& word : words)
+        for (int32_t y = 0; y < board.size(); ++y)
         {
-            ASSERT(word.length() > 0);
-
-            const vector<Coord> coords = getCoords(board, word.at(0));
-
-            for (const Coord coord : coords)
+            for (int32_t x = 0; x < board.at(0).size(); ++x)
             {
-                if (findWordsRecursively(board, word, 1, coord))
-                {
-                    ans.emplace_back(word);
-                    break;
-                }
+                dfs(ans, head, board, x, y);
             }
         }
 
         return ans;
-    }
-
-private:
-    bool isOutOfBound(int32_t width, int32_t height, Coord current, Coord shift)
-    {
-        const Coord next_coord(current.m_x + shift.m_x, current.m_y + shift.m_y);
-
-        if (next_coord.m_x < 0 || width <= next_coord.m_x)
-            return true;
-        
-        if (next_coord.m_y < 0 || height <= next_coord.m_y)
-            return true;
-
-        return false;
-    }
-
-    bool findWordsRecursively(vector<vector<char>> board, const string& word, int32_t pos, Coord coord)
-    {
-        if (word.size() == pos)
-            return true;
-
-        // mark the coord as already visited
-        board.at(coord.m_y).at(coord.m_x) = '_';
-
-        const array<Coord, 4> next_shift = {Coord(-1, 0), Coord(1, 0), Coord(0, -1), Coord(0, 1)};
-
-        for (Coord shift : next_shift)
-        {
-            if (isOutOfBound(board.at(0).size(), board.size(), coord, shift))
-                continue;
-
-            const Coord next_coord(coord.m_x + shift.m_x, coord.m_y + shift.m_y);
-
-            if (word.at(pos) != board.at(next_coord.m_y).at(next_coord.m_x))
-                continue;
-            
-            if (findWordsRecursively(board, word, pos + 1, next_coord))
-                return true;
-        }
-
-        return false;
     }
 };
 
@@ -151,7 +193,24 @@ int32_t main(int32_t argc, char* argv[])
     }
 
     {
-        // TODO: perf optimization
+        board = {{'a','a'}};
+        words = {"aaa"};
+        exp = { };
+
+        Solution solution;
+        ans = solution.findWords(board, words); check(ans, exp);
+    }
+
+    {
+        board = {{ 'o', 'a', 'a', 'n' }, { 'e', 't', 'a', 'e' }, { 'i', 'h', 'k', 'r' }, { 'i', 'f', 'l', 'v' }};
+        words = {"oath", "pea", "eat", "rain", "oathi", "oathk", "oathf", "oate", "oathii", "oathfi", "oathfii"};
+        exp = {"oath","oathk","oathf","oathfi","oathfii","oathi","oathii","oate","eat"};
+
+        Solution solution;
+        ans = solution.findWords(board, words); check(ans, exp);
+    }
+
+    {
         board = {{'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a'},
                  {'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b'},
                  {'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a'},
@@ -841,7 +900,7 @@ int32_t main(int32_t argc, char* argv[])
             "ababababzy",
             "ababababzz"
         };
-        exp = { };
+        exp = { "ababababab" };
 
         Solution solution;
         ans = solution.findWords(board, words); check(ans, exp);
