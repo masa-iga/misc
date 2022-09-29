@@ -8,8 +8,8 @@
 
 using namespace std;
 
-#define ENABLE_DPRINTF (1)
-#define ENABLE_ASSERT (1)
+#define ENABLE_DPRINTF (0)
+#define ENABLE_ASSERT (0)
 
 #if ENABLE_DPRINTF
 #define DPRINTF(...) \
@@ -46,18 +46,18 @@ public:
             return;
         }
 
-        const char c = word.at(pos);
+        const char c = word[pos];
         const int32_t idx = getIndex(c);
 
-        if (m_nodes.at(idx) == nullptr)
+        if (m_nodes[idx] == nullptr)
         {
-            m_nodes.at(idx) = new Node(c);
+            m_nodes[idx] = new Node(c);
         }
 
-        m_nodes.at(idx)->create(word, pos + 1);
+        m_nodes[idx]->create(word, pos + 1);
     }
 
-    Node* getNode(char c) { return m_nodes.at(getIndex(c)); }
+    Node* getNode(char c) { return m_nodes[getIndex(c)]; }
     string getWord() const { return m_word; }
     bool isEnd() const { return m_word == "" ? false : true; }
     void invalidate() { m_word = ""; };
@@ -89,12 +89,12 @@ Node* buildTrie(const vector<string>& words)
     return top;
 }
 
-bool isOutOfBound(const vector<vector<char>>& board, int32_t x, int32_t y)
+inline bool isOutOfBound(const vector<vector<char>>& board, int32_t x, int32_t y)
 {
     if (y < 0 || board.size() <= y)
         return true;
 
-    if (x < 0 || board.at(0).size() <= x)
+    if (x < 0 || board[0].size() <= x)
         return true;
 
     return false;
@@ -102,15 +102,12 @@ bool isOutOfBound(const vector<vector<char>>& board, int32_t x, int32_t y)
 
 void dfs(vector<string>& ans, Node* node, vector<vector<char>>& board, int32_t x, int32_t y)
 {
-    if (isOutOfBound(board, x, y))
-        return;
-    
     constexpr char kAlreadyVisited = '_';
 
-    if (board.at(y).at(x) == kAlreadyVisited)
+    if (board[y][x] == kAlreadyVisited)
         return;
 
-    const char c = board.at(y).at(x);
+    const char c = board[y][x];
 
     Node* n = node->getNode(c);
 
@@ -123,21 +120,21 @@ void dfs(vector<string>& ans, Node* node, vector<vector<char>>& board, int32_t x
         n->invalidate();
     }
 
-    const vector<pair<int32_t, int32_t>> coords{
-        make_pair<int32_t, int32_t>(-1, 0),
-        make_pair<int32_t, int32_t>(+1, 0),
-        make_pair<int32_t, int32_t>(0, -1),
-        make_pair<int32_t, int32_t>(0, +1),
-    };
+    board[y][x] = kAlreadyVisited;
 
-    board.at(y).at(x) = kAlreadyVisited;
+    if (x - 1 >= 0)
+        dfs(ans, n, board, x - 1, y);
 
-    for (pair<int32_t, int32_t> coord : coords)
-    {
-        dfs(ans, n, board, x + coord.first, y + coord.second);
-    }
+    if (x + 1 < board[0].size())
+        dfs(ans, n, board, x + 1, y);
 
-    board.at(y).at(x) = c;
+    if (y - 1 >= 0)
+        dfs(ans, n, board, x, y - 1);
+
+    if (y + 1 < board.size())
+        dfs(ans, n, board, x, y + 1);
+
+    board[y][x] = c;
 }
 
 class Solution {
@@ -150,7 +147,7 @@ public:
 
         for (int32_t y = 0; y < board.size(); ++y)
         {
-            for (int32_t x = 0; x < board.at(0).size(); ++x)
+            for (int32_t x = 0; x < board[0].size(); ++x)
             {
                 dfs(ans, head, board, x, y);
             }
