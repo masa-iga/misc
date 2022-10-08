@@ -27,19 +27,19 @@ using namespace std;
 class Solution {
 public:
     int lengthOfLIS(vector<int>& nums) {
-        return 4;
+        return compute(nums, 0);
     }
 
 private:
-    int32_t dp(const vector<int32_t>& nums, int32_t pos)
+    int32_t compute(const vector<int32_t>& nums, int32_t pos)
     {
-        vector<int32_t> maxArray(nums.size(), 0);
+        vector<int32_t> maxArray(nums.size(), 1);
 
         for (int32_t i = 0; i < nums.size(); ++i)
         {
             for (int32_t j = 0; j < i; ++j)
             {
-                if (nums.at(i) > nums.at(j) && maxArray.at(i) > maxArray.at(j) + 1)
+                if (nums.at(i) > nums.at(j) && maxArray.at(i) <= maxArray.at(j))
                 {
                     maxArray.at(i) = maxArray.at(j) + 1;
                 }
@@ -57,10 +57,15 @@ int32_t main(int32_t argc, char* argv[])
     int32_t exp = 0;
 
     {
-        Solution solution;
         inp = {10, 9, 2, 5, 3, 7, 101, 18};
         exp = 4;
-        ans = solution.lengthOfLIS(inp); ASSERT(ans == exp);
+        Solution solution; ans = solution.lengthOfLIS(inp); ASSERT(ans == exp);
+    }
+
+    {
+        inp = {7,7,7,7,7,7,7};
+        exp = 1;
+        Solution solution; ans = solution.lengthOfLIS(inp); ASSERT(ans == exp);
     }
 
     return 0;
