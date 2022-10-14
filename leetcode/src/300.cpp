@@ -27,26 +27,53 @@ using namespace std;
 class Solution {
 public:
     int lengthOfLIS(vector<int>& nums) {
-        return compute(nums, 0);
+        return compute(nums);
     }
 
 private:
-    int32_t compute(const vector<int32_t>& nums, int32_t pos)
+    int32_t compute(const vector<int32_t>& nums)
     {
-        vector<int32_t> maxArray(nums.size(), 1);
+        vector<int32_t> tails;
 
-        for (int32_t i = 0; i < nums.size(); ++i)
+        for (const int32_t n : nums)
         {
-            for (int32_t j = 0; j < i; ++j)
+            const int32_t idx = bs(n, tails);
+
+            ASSERT(0 <= idx && idx <= tails.size());
+
+            if (idx < tails.size())
+                tails.at(idx) = n;
+            else
+                tails.emplace_back(n);
+        }
+
+        return tails.size();
+    }
+
+    int32_t bs(int32_t n, const vector<int32_t> vals)
+    {
+        int32_t left = 0;
+        int32_t right = vals.size() - 1;
+
+        while (left <= right)
+        {
+            const int32_t center = (left + right) / 2;
+
+            if (n == vals.at(center))
             {
-                if (nums.at(i) > nums.at(j) && maxArray.at(i) <= maxArray.at(j))
-                {
-                    maxArray.at(i) = maxArray.at(j) + 1;
-                }
+                return center;
+            }
+            else if (n < vals.at(center))
+            {
+                right = center - 1;
+            }
+            else
+            {
+                left = center + 1;
             }
         }
 
-        return *std::max_element(maxArray.begin(), maxArray.end());
+        return left;
     }
 };
 
@@ -64,6 +91,18 @@ int32_t main(int32_t argc, char* argv[])
 
     {
         inp = {7,7,7,7,7,7,7};
+        exp = 1;
+        Solution solution; ans = solution.lengthOfLIS(inp); ASSERT(ans == exp);
+    }
+
+    {
+        inp = {1,2,3};
+        exp = 3;
+        Solution solution; ans = solution.lengthOfLIS(inp); ASSERT(ans == exp);
+    }
+
+    {
+        inp = {7,6,5};
         exp = 1;
         Solution solution; ans = solution.lengthOfLIS(inp); ASSERT(ans == exp);
     }
