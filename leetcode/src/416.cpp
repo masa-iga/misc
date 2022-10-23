@@ -33,40 +33,35 @@ public:
         if (sum % 2 != 0)
             return false;
 
-        std::sort(nums.begin(), nums.end(), std::greater<int32_t>()); // O(N * logN)
+        vector<vector<int32_t>> cache(nums.size(), vector<int32_t>(sum/2 + 1, kInvalid));
 
-        return dp(nums, sum / 2, 0, 0);
+        return dp(nums, cache, nums.size() - 1, sum / 2);
     }
 
 private:
-    bool dp(vector<int32_t>& nums /* sorted in decending order */, int32_t target, int32_t sum, int32_t idx)
+    static constexpr int32_t kInvalid = INT32_MIN;
+
+    bool dp(const vector<int32_t>& nums, vector<vector<int32_t>>& cache, int32_t i, int32_t j)
     {
-        if (idx == nums.size())
+        ASSERT(0 <= i && i < cache.size());
+        ASSERT(j < static_cast<int32_t>(cache.at(0).size()));
+
+        if (j < 0)
             return false;
 
-        ASSERT(sum < target);
-        ASSERT(idx < nums.size());
+        if (cache.at(i).at(j) != kInvalid)
+            return cache.at(i).at(j);
 
-        for (int32_t i = idx; i < nums.size(); ++i)
-        {
-            sum += nums.at(i);
+        if (i == 0)
+            return (nums.at(0) == j);
 
-            if (sum == target)
-                return true;
+        if (nums.at(i) == j)
+            return true;
 
-            if (sum > target)
-            {
-                sum -= nums.at(i);
-                continue;
-            }
+        const bool ret = dp(nums, cache, i - 1, j) | dp(nums, cache, i - 1, j - nums.at(i));
+        cache.at(i).at(j) = ret;
 
-            if (dp(nums, target, sum, i + 1))
-                return true;
-            
-            sum -= nums.at(i);
-        }
-
-        return false;
+        return ret;
     }
 };
 
@@ -76,7 +71,7 @@ int32_t main(int32_t argc, char* argv[])
     vector<int32_t> inp;
     bool exp = false;
 
-#if 0
+#if 1
     {
         inp = {1, 5, 11, 5};
         exp = true;
@@ -97,7 +92,7 @@ int32_t main(int32_t argc, char* argv[])
 
     {
         inp = {2, 2, 3, 5};
-        exp = true;
+        exp = false;
         const bool ans = solution.canPartition(inp); ASSERT(ans == exp);
     }
 
