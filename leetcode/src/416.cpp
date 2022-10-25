@@ -35,32 +35,22 @@ public:
         
         sum /= 2;
 
-        vector<vector<int32_t>> cache(nums.size() + 1, vector<int32_t>(sum + 1, kInvalid));
+        vector<bool> cache(sum + 1, false);
+        cache.at(0) = true;
 
-        for (int32_t i = 1; i < nums.size(); ++i)
-            cache.at(i).at(0) = true;
-        
-        for (int32_t j = 1; j < sum + 1; ++j)
-            cache.at(0).at(j) = false;
-
-        for (int32_t i = 1; i < nums.size() + 1; ++i)
+        for (const int32_t num : nums)
         {
-            for (int32_t j = 1; j < sum + 1; ++j)
+            for (int32_t i = sum; i > 0; --i)
             {
-                cache.at(i).at(j) = cache.at(i - 1).at(j);
-
-                if (j >= nums.at(i - 1))
+                if (i >= num)
                 {
-                    cache.at(i).at(j) |= cache.at(i - 1).at(j - nums.at(i - 1));
+                    cache.at(i) = cache.at(i) | cache.at(i - num);
                 }
             }
         }
 
-        return cache.at(nums.size()).at(sum);
+        return cache.at(sum);
     }
-
-private:
-    static constexpr int32_t kInvalid = INT32_MIN;
 };
 
 int32_t main(int32_t argc, char* argv[])
