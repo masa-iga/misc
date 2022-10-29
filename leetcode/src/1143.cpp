@@ -3,6 +3,7 @@
 #include <cassert>
 #include <vector>
 #include <string>
+#include <cstring>
 
 using namespace std;
 
@@ -27,20 +28,21 @@ do { \
 class Solution {
 public:
     int longestCommonSubsequence(string text1, string text2) {
-        vector<vector<int32_t>> lcs(text1.length() + 1, vector<int32_t>(text2.length() + 1, 0));
+        int32_t lcs[text1.length() + 1][text2.length() + 1];
+        memset(lcs, 0x0, sizeof(lcs));
 
         for (int32_t i = 0; i < text1.length(); ++i)
         {
             for (int32_t j = 0; j < text2.length(); ++j)
             {
                 if (text1.at(i) == text2.at(j))
-                    lcs.at(i + 1).at(j + 1) = lcs.at(i).at(j) + 1;
+                    lcs[i + 1][j + 1] = lcs[i][j] + 1;
                 else
-                    lcs.at(i + 1).at(j + 1) = max(lcs.at(i + 1).at(j), lcs.at(i).at(j + 1));
+                    lcs[i + 1][j + 1] = max(lcs[i + 1][j], lcs[i][j + 1]);
             }
         }
 
-        return lcs.at(text1.length()).at(text2.length());
+        return lcs[text1.length()][text2.length()];
     }
 };
 
