@@ -17,7 +17,7 @@ public:
     }
 
 private:
-    bool isValidNumber(const string_view s)
+    inline bool isValidNumber(const string_view s, int32_t pos, int32_t len)
     {
         static const set<string_view> validStrs = {
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", 
@@ -25,7 +25,9 @@ private:
             "21", "22", "23", "24", "25", "26",
         };
 
-        if (validStrs.find(s) != validStrs.end())
+        string_view str = s.substr(pos, len);
+
+        if (validStrs.find(str) != validStrs.end())
             return true;
 
         return false;
@@ -43,13 +45,13 @@ private:
         
         int32_t n = 0;
 
-        if (string str = s.substr(pos, 1); isValidNumber(str))
+        if (isValidNumber(s, pos, 1))
             n = dp(cache, s, pos + 1);
 
         if (pos == s.length() - 1)
             return n;
         
-        if (string str = s.substr(pos, 2); isValidNumber(str))
+        if (isValidNumber(s, pos, 2))
             n += dp(cache, s, pos + 2);
 
         cache[pos] = n;
