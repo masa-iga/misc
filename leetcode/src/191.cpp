@@ -4,7 +4,6 @@
 
 using namespace std;
 
-// TODO: もっと早い方法はあるか？
 class Solution {
 public:
     int hammingWeight(uint32_t n) {
