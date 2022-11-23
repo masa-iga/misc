@@ -10,23 +10,21 @@ class Solution {
 public:
     int singleNumber(vector<int>& nums) {
         unordered_set<int32_t> uset;
+        int32_t ans = 0;
 
         for (const int32_t n : nums)
         {
             if (uset.count(n) == 0)
             {
                 uset.emplace(n);
+                ans += n;
                 continue;
             }
 
-            uset.erase(n);
+            ans -= n;
         }
 
-        assert(uset.size() == 1);
-
-        auto it = uset.begin();
-
-        return *it;
+        return ans;
     }
 };
 
